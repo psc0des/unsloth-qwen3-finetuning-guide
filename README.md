@@ -172,6 +172,10 @@ Review this mapping in the UI before training — it should look correct automat
 | **Est. total steps** | **~150** | 500 × 0.9 / 2 / 16 × 10 epochs |
 | **Est. time** | ~45–60 min | Slightly longer than QLoRA due to full-precision ops |
 
+**What the correctly configured UI looks like:**
+
+![Unsloth Studio — production settings configured](screenshots/Finetuning-Configuration.png)
+
 ---
 
 ### Parameters explained — what each one does
