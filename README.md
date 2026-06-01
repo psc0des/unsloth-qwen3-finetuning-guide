@@ -88,6 +88,33 @@ Then open **http://localhost:8888**
 2. **Training mode:** **LoRA (16-bit)** — recommended for Qwen3.5. QLoRA settings are included below for reference but Unsloth advises against QLoRA on this model family.
 3. **Dataset:** Upload your `finetuning_dataset.jsonl` (drag-and-drop onto the upload box, or click Upload).
 
+### What your dataset should look like
+
+Unsloth Studio expects a `.jsonl` file — one JSON object per line. The simplest format is instruction/response pairs:
+
+```jsonl
+{"instruction": "What is LoRA?", "response": "LoRA is a fine-tuning method that freezes the base model and trains small adapter matrices instead of updating all weights. It reduces trainable parameters by 90–99% while maintaining comparable performance."}
+{"instruction": "When should I use fine-tuning vs RAG?", "response": "Fine-tune when you want to change how the model behaves — its tone, style, or domain focus. Use RAG when you want to inject fresh or frequently changing facts. Fine-tuning is not a good way to teach a model new facts it will need to retrieve accurately."}
+```
+
+When you upload this file, Unsloth auto-detects the column mapping:
+- `instruction` → **User**
+- `response` → **Assistant**
+
+Review this mapping in the UI before training — it should look correct automatically.
+
+**Dataset size guidance:**
+
+| Goal | Min rows | Notes |
+|---|---|---|
+| Style / tone shift | 50–200 | Style transfers quickly |
+| Domain adaptation | 300–1000 | Enough to override base model priors |
+| Knowledge injection | 1000+ | Fine-tuning is unreliable for facts — consider RAG instead |
+
+> **Enable "Assistant completions only"** in Studio — this tells the model to only learn from the response side, not the instructions. You want it to learn how to answer, not memorise your questions.
+
+---
+
 ### QLoRA smoke-test settings (not recommended for Qwen3.5)
 
 > ⚠️ Unsloth advises against QLoRA for Qwen3.5 — use the LoRA 16-bit settings below for any real run. These settings are included only as a reference for what a minimal smoke-test looks like.
