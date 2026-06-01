@@ -14,7 +14,7 @@
 
 ## 1. Model & VRAM decision (why Qwen3.5-4B)
 
-Estimated VRAM for **bf16 LoRA** training (params × 2 bytes + training overhead):
+From the [Unsloth Qwen3.5 docs](https://unsloth.ai/docs/models/qwen3.5/fine-tune) — VRAM for **bf16 LoRA** training:
 
 | Model        | bf16 LoRA VRAM | Fits 16GB? |
 |--------------|----------------|------------|
@@ -39,7 +39,9 @@ Estimated VRAM for **bf16 LoRA** training (params × 2 bytes + training overhead
 | Speed | Slower (more VRAM pressure) | Faster (less data to move) |
 | **When to use** | Production runs, final model | Quick experiments, limited VRAM, demos |
 
-*~10GB estimate: 4B params × 2 bytes (bf16) ≈ 8GB weights + LoRA adapters + overhead.*
+*Source: [Unsloth Qwen3.5 fine-tune docs](https://unsloth.ai/docs/models/qwen3.5/fine-tune)*
+
+> ⚠️ **Unsloth explicitly states:** *"It is not recommended to do QLoRA (4-bit) training on the Qwen3.5 models"* due to quantization differences. Use LoRA (bf16) for Qwen3.5.
 
 > **Real-world observation:** The figures above are model weights only — what Unsloth's docs quote as the baseline. In practice, a full LoRA run on Qwen3.5-4B (batch=2, seq=1024, rank=32, gradient checkpointing on) used **15.44 / 15.93 GB** on an RTX 5060 Ti. Training also loads activations, optimizer state, and gradient buffers on top of the model weights. If you have exactly 16GB, expect it to be nearly full.
 
