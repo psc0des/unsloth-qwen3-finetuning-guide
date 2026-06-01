@@ -361,6 +361,20 @@ Effective batch size = Batch Size × Gradient Accumulation
 
 > ⚠️ Watch both curves. If train loss keeps falling but eval loss starts rising, the model is overfitting — the best checkpoint is the one where eval loss was lowest, not the final one.
 
+**Why the final model is not always the best model:**
+
+In a real training run on a 500-entry dataset with 10 epochs, the training loss dropped cleanly from 2.78 → 0.79. Looks great. But the eval loss bottomed out around epoch 3–4 and then climbed back to 1.97 by the end.
+
+The model had stopped learning and started memorising.
+
+> **In plain terms:** Think of a student preparing for an exam with 500 practice questions. For the first few sessions, they genuinely understand the concepts — their score on unseen questions improves. But if you keep making them restudy the same 500 questions past that point, they stop thinking and start memorising exact answers. Their practice score keeps going up. Their ability to handle new questions goes down. The model does exactly the same thing — it has one job (reduce training loss) and no awareness that it has already learned enough.
+
+**The fix — use a checkpoint, not the final model:**
+
+Because `save_steps = 30` was set, checkpoints were saved at steps 30, 60, 90, 120, and 150. The eval loss was lowest around step 42–57 (epoch 3–4). The closest saved checkpoint was **checkpoint-60** — that's the one to export, not the final model at step 150.
+
+This is exactly why `eval_steps` and `save_steps` matter. Without them, you'd only have the final (overfit) model and no way to go back.
+
 ---
 
 ## 5. Export the finetuned model
