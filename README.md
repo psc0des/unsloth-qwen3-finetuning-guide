@@ -90,7 +90,7 @@ Then open **http://localhost:8888**
 
 ### What your dataset should look like
 
-Unsloth Studio expects a `.jsonl` file — one JSON object per line. The simplest format is instruction/response pairs:
+Unsloth Studio supports multiple file types (JSONL, CSV) and conversation formats (Alpaca, ShareGPT, ChatML). The simplest format to start with is Alpaca-style instruction/response pairs in a `.jsonl` file:
 
 ```jsonl
 {"instruction": "What is LoRA?", "response": "LoRA is a fine-tuning method that freezes the base model and trains small adapter matrices instead of updating all weights. It reduces trainable parameters by 90–99% while maintaining comparable performance."}
