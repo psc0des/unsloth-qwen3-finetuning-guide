@@ -1,6 +1,6 @@
 # Fine-Tuning Qwen3.5-4B with Unsloth Studio → Deploy to vLLM
 
-> **Goal:** End-to-end guide — finetune Qwen3.5-4B with **QLoRA** (quick demo) or **LoRA 16-bit** (production) using **Unsloth Studio** (no-code, local), then serve it with **vLLM in Docker**.
+> **Goal:** End-to-end guide — finetune Qwen3.5-4B with **LoRA 16-bit** using **Unsloth Studio** (no-code, local), then export for serving with vLLM.
 > **Hardware:** 16GB VRAM / 64GB RAM, native **Windows 11**.
 > **Updated:** 2026-06-01
 
@@ -8,7 +8,7 @@
 
 ## 0. The 30-second mental model
 
-> Full finetuning updates all weights — too expensive for one GPU. **LoRA** freezes the base model and trains tiny low-rank adapter matrices (A·B) injected into attention/MLP layers, so you train ~0.1–1% of params. **QLoRA** goes further: it loads the *base* model in 4-bit (NF4) to slash VRAM, then trains the LoRA adapters in 16-bit on top. **Unsloth** makes this ~2x faster with ~70% less memory via custom Triton kernels. After training the adapter can be kept separate or **merged** back into the base weights for serving with vLLM.
+> Full finetuning updates all weights — too expensive for one GPU. **LoRA** freezes the base model and trains tiny low-rank adapter matrices (A·B) injected into attention/MLP layers, so you train ~0.1–1% of params. **QLoRA** goes further: it loads the *base* model in 4-bit (NF4) to slash VRAM, then trains the LoRA adapters in 16-bit on top. **Unsloth** makes Qwen3.5 training ~1.5x faster with ~50% less VRAM compared to standard FA2 setups, via custom Triton kernels. After training the adapter can be kept separate or **merged** back into the base weights for serving with vLLM.
 
 ---
 
@@ -49,7 +49,7 @@ From the [Unsloth Qwen3.5 docs](https://unsloth.ai/docs/models/qwen3.5/fine-tune
 
 ## 2. Install Unsloth Studio (Windows PowerShell)
 
-> ⚠️ Do **NOT** use `irm https://unsloth.ai/install.ps1 | iex` — that URL 301-redirects and `irm` misparses it as XML (`System.Xml.XmlDocument` error). Use the **direct raw URL** below.
+> ⚠️ If `irm https://unsloth.ai/install.ps1 | iex` gives a `System.Xml.XmlDocument` error on your machine, use the **direct raw URL** below instead. The official URL may 301-redirect in a way PowerShell misparses.
 
 **(Optional) Install to E: drive instead of default `%USERPROFILE%\.unsloth\studio`:**
 ```powershell
@@ -88,9 +88,9 @@ Then open **http://localhost:8888**
 2. **Training mode:** **LoRA (16-bit)** — recommended for Qwen3.5. QLoRA settings are included below for reference but Unsloth advises against QLoRA on this model family.
 3. **Dataset:** Upload your `finetuning_dataset.jsonl` (drag-and-drop onto the upload box, or click Upload).
 
-### Quick demo settings (QLoRA, small dataset)
+### QLoRA smoke-test settings (not recommended for Qwen3.5)
 
-> Use this for a first run to verify your setup works end-to-end. Trains in ~10 minutes.
+> ⚠️ Unsloth advises against QLoRA for Qwen3.5 — use the LoRA 16-bit settings below for any real run. These settings are included only as a reference for what a minimal smoke-test looks like.
 
 | Parameter | Value |
 |---|---|
@@ -196,7 +196,7 @@ Each step processes one batch of data and performs one gradient update.
 
 **What it is:** The maximum number of tokens in a single training sample. Samples longer than this are truncated; shorter ones are padded (or packed).
 
-**What it does:** Directly determines VRAM usage — a longer context means a larger KV cache during the forward pass. Doubling context length roughly quadruples attention memory.
+**What it does:** Directly determines VRAM usage — longer context increases activation and attention memory during training. Attention memory can scale roughly quadratically with sequence length, though Unsloth's kernels reduce the practical impact.
 
 | Value | Use when | VRAM impact |
 |---|---|---|
@@ -247,7 +247,7 @@ Each step processes one batch of data and performs one gradient update.
 
 **What it is:** Randomly zeroes a fraction of LoRA activations during each training step, forcing the model to not rely on any single pathway.
 
-**What it does:** Prevents overfitting — the adapter can't memorise the training data if random neurons are switched off each step.
+**What it does:** Reduces overfitting risk — randomly switching off neurons each step makes memorisation harder, forcing the model to learn generalizable patterns instead of specific sequences.
 
 | Value | Use when |
 |---|---|
@@ -273,7 +273,7 @@ Each step processes one batch of data and performs one gradient update.
 | `q_proj, k_proj, v_proj, o_proj` | Full attention | Good for instruction following |
 | **All 7 (default)** | **Attention + MLP (gate, up, down)** | **Best for domain adaptation and knowledge** |
 
-**Production standard:** Use all 7 for any serious finetuning. The MLP layers hold factual knowledge — skipping them limits how much the model can learn.
+**Production standard:** Use all 7 for any serious finetuning. MLP layers often carry much of the model's capacity — skipping them limits how much the adapter can shift the model's behaviour.
 
 ---
 
@@ -281,7 +281,7 @@ Each step processes one batch of data and performs one gradient update.
 
 **Batch Size:** Number of samples processed in parallel per GPU per step. Higher = better gradient estimates, more stable training. Limited by VRAM.
 
-**Gradient Accumulation:** Instead of updating weights after every batch, accumulate gradients over N batches and update once. Mathematically equivalent to a larger batch, without the VRAM cost.
+**Gradient Accumulation:** Instead of updating weights after every batch, accumulate gradients over N batches and update once. Effectively equivalent to a larger batch when implemented correctly, without the VRAM cost.
 
 ```
 Effective batch size = Batch Size × Gradient Accumulation
