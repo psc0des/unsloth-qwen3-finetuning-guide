@@ -163,6 +163,8 @@ Each step processes one batch of data and performs one gradient update.
 - Use **Steps** when you want tight control and fast iteration (smoke tests, hyperparameter search). Easy to stop early.
 - Use **Epochs** in production — it's the standard because it's dataset-size-agnostic. "Train for 3 epochs" means the model sees every sample 3 times regardless of dataset size.
 
+> **In plain terms:** An epoch is like reading a book cover to cover once. A step is like stopping to take notes every few pages. 10 epochs = you read the whole book 10 times. Each time you stop to take notes, that's one step.
+
 | Scenario | Recommended control | Value |
 |---|---|---|
 | Quick smoke test / first run | Steps | 30–100 |
@@ -185,6 +187,8 @@ Each step processes one batch of data and performs one gradient update.
 | Continued pretraining | 5e-5 | Mid-range — adjusting existing knowledge |
 
 **Production standard:** Always pair with a warmup (5–10% of total steps) so the model doesn't get a large update on the very first step when the optimizer's momentum is cold.
+
+> **In plain terms:** Like adjusting the volume on a radio. Too high and the signal distorts — the model overshoots and breaks. Too low and you can barely hear anything — the model barely learns. 2e-4 is the sweet spot for adapter training.
 
 ---
 
@@ -220,6 +224,8 @@ Each step processes one batch of data and performs one gradient update.
 
 **Production standard:** Start at r=16. If eval loss plateaus early, bump to 32. If you're compute-rich, run a sweep.
 
+> **In plain terms:** Think of rank like the number of lanes on a highway. More lanes (higher rank) = more traffic can flow = the adapter can learn more complex patterns. But more lanes also cost more to build (VRAM) and maintain (training time).
+
 ---
 
 #### LoRA Alpha
@@ -250,6 +256,8 @@ Each step processes one batch of data and performs one gradient update.
 | 0.10 | Larger datasets with noisy labels |
 
 **Production standard:** Monitor train vs eval loss gap. If eval loss diverges from train loss, add dropout 0.05.
+
+> **In plain terms:** Imagine a student studying the same 500 exam questions over and over. Eventually they stop understanding the concepts and just memorize the exact answers. If you randomly hide 5% of their notes each session, they can't memorize word-for-word — they're forced to actually learn the pattern. That's dropout.
 
 ---
 
@@ -290,6 +298,8 @@ Effective batch size = Batch Size × Gradient Accumulation
 
 **Production standard:** Target effective batch of 16–32. If your GPU only allows batch=1, set grad_accum=16 to compensate.
 
+> **In plain terms:** Before changing a recipe, would you rely on one person's opinion or 32 people's? One opinion is noisy — someone might just be in a bad mood. 32 opinions give you a reliable signal. Gradient accumulation lets you collect 32 opinions without needing 32 people in the kitchen at once.
+
 ---
 
 #### Optimizer — AdamW 8-bit
@@ -320,6 +330,8 @@ Effective batch size = Batch Size × Gradient Accumulation
 
 **Production standard:** Use **cosine** with warmup. Linear is fine for quick demo runs.
 
+> **In plain terms:** Cosine is like a car that accelerates smoothly, cruises at full speed through the middle, then eases off gently near the destination. Linear just brakes at a constant rate. Both get you there — cosine just parks more cleanly.
+
 ---
 
 #### Weight Decay
@@ -335,6 +347,8 @@ Effective batch size = Batch Size × Gradient Accumulation
 | 0.1 | Aggressive regularisation for noisy or very small datasets |
 
 **Production standard:** Set to 0.01 for any run over 500 steps.
+
+> **In plain terms:** Like a gentle rubber band attached to every weight, constantly pulling it back toward zero. It stops any single weight from growing too large and dominating the model's decisions — a subtle but effective check on overconfidence.
 
 ---
 
@@ -369,37 +383,7 @@ Studio also has an Export option for these. Note the output folder path shown in
 
 ---
 
-## 6. Deploy to vLLM in Docker
-
-> ⚠️ **vLLM v0.16.0 does NOT support Qwen3.5.** Use **≥ 0.17.0 or nightly**.
-
-**Prereqs (one-time):**
-- Docker Desktop with **WSL2 backend** (Settings → General → "Use WSL 2 based engine")
-- Recent NVIDIA driver. Verify GPU passthrough:
-  ```powershell
-  docker run --rm --gpus all nvidia/cuda:12.4.0-base-ubuntu22.04 nvidia-smi
-  ```
-
-**Serve:**
-```powershell
-docker run --gpus all `
-  -v <your-model-path>:/model `
-  -p 8000:8000 `
-  vllm/vllm-openai:v0.17.0 `
-  --model /model `
-  --max-model-len 4096 `
-  --gpu-memory-utilization 0.90
-```
-> If `v0.17.0` won't pull, try `:latest` or `:nightly`.
-
-**Test (OpenAI-compatible API):**
-```powershell
-curl http://localhost:8000/v1/chat/completions -H "Content-Type: application/json" -d '{\"model\":\"/model\",\"messages\":[{\"role\":\"user\",\"content\":\"hi\"}]}'
-```
-
----
-
-## 7. Comparing base vs fine-tuned output
+## 6. Comparing base vs fine-tuned output
 
 After exporting, use **Compare in Chat** in Unsloth Studio to test both models side by side with the same prompt.
 
@@ -409,7 +393,7 @@ After exporting, use **Compare in Chat** in Unsloth Studio to test both models s
 
 ---
 
-## 8. Troubleshooting cheat sheet
+## 7. Troubleshooting cheat sheet
 
 | Symptom | Fix |
 |---|---|
@@ -423,7 +407,7 @@ After exporting, use **Compare in Chat** in Unsloth Studio to test both models s
 
 ---
 
-## 9. Concept quick reference
+## 8. Concept quick reference
 
 | Question | Crisp answer |
 |---|---|
