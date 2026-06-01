@@ -1,0 +1,11 @@
+finetuning_dataset.jsonl
+linkedin-post-draft.md
+unsloth-studio/
+unsloth_compiled_cache/
+uv-cache/
+screenshots/Error1.png
+screenshots/Error2.png
+screenshots/Export-Model-Checkpoint.png
+screenshots/Export-Model-Merged.png
+screenshots/Screenshot*
+*.tmp
