@@ -8,7 +8,7 @@
 
 ## 0. The 30-second mental model
 
-> Full finetuning updates all weights — too expensive for one GPU. **LoRA** freezes the base model and trains tiny low-rank adapter matrices (A·B) injected into attention/MLP layers, so you train ~0.1–1% of params. **QLoRA** goes further: it loads the *base* model in 4-bit (NF4) to slash VRAM, then trains the LoRA adapters in 16-bit on top. **Unsloth** makes this ~2x faster with ~70% less memory via custom Triton kernels. After training I either keep the adapter separate or **merge** it back into the base weights for serving with vLLM.
+> Full finetuning updates all weights — too expensive for one GPU. **LoRA** freezes the base model and trains tiny low-rank adapter matrices (A·B) injected into attention/MLP layers, so you train ~0.1–1% of params. **QLoRA** goes further: it loads the *base* model in 4-bit (NF4) to slash VRAM, then trains the LoRA adapters in 16-bit on top. **Unsloth** makes this ~2x faster with ~70% less memory via custom Triton kernels. After training the adapter can be kept separate or **merged** back into the base weights for serving with vLLM.
 
 ---
 
@@ -26,7 +26,7 @@ From the [Unsloth Qwen3.5 docs](https://unsloth.ai/docs/models/qwen3.5/fine-tune
 
 **Decisions:**
 - Use **`Qwen/Qwen3.5-4B`** (or `unsloth/Qwen3.5-4B`).
-- Official docs recommend bf16 LoRA for Qwen3.5, but **QLoRA (4-bit)** is a good starting point — lower VRAM, quicker training. Trade-off: marginally lower quality than bf16 LoRA, acceptable for a demo or first run.
+- Official docs recommend **bf16 LoRA** for Qwen3.5. Unsloth explicitly states QLoRA is not recommended for this model family — use LoRA.
 - Qwen3.6's smallest size is 27B → too big to finetune on 16GB. That's why we use 3.5-4B.
 
 **LoRA vs QLoRA — when to pick which:**
@@ -85,7 +85,7 @@ Then open **http://localhost:8888**
 ## 4. Configure training in Studio (UI)
 
 1. **Model:** `Qwen/Qwen3.5-4B`
-2. **Training mode:** **QLoRA (4-bit)** for a quick first run, or **LoRA (16-bit)** for production quality. See settings tables below.
+2. **Training mode:** **LoRA (16-bit)** — recommended for Qwen3.5. QLoRA settings are included below for reference but Unsloth advises against QLoRA on this model family.
 3. **Dataset:** Upload your `finetuning_dataset.jsonl` (drag-and-drop onto the upload box, or click Upload).
 
 ### Quick demo settings (QLoRA, small dataset)
@@ -341,7 +341,7 @@ Effective batch size = Batch Size × Gradient Accumulation
 4. **Train** — watch live loss in the observability panel. Healthy training looks like: loss drops steeply in the first 10–20 steps, then gradually levels off. If it flatlines immediately → LR too low. If it spikes → LR too high.
 5. **Eval** in the UI to sanity-check before exporting.
 
-**What the dashboard looks like mid-run:**
+**What a completed training run looks like:**
 
 ![Training dashboard — train loss dropping, eval loss visible](screenshots/LoRa-Training.png)
 
@@ -416,7 +416,7 @@ After exporting, use **Compare in Chat** in Unsloth Studio to test both models s
 | `System.Xml.XmlDocument` on install | Use the raw GitHub URL (Step 2), not `unsloth.ai/install.ps1`. |
 | Execution policy error | `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass` then retry. |
 | `unsloth` not recognized | Reopen PowerShell (PATH refresh). |
-| OOM during training | max seq len → 1024, batch=1. QLoRA uses less VRAM than LoRA — switch to QLoRA if still OOM. |
+| OOM during training | Reduce seq len → 512, batch → 1, or lower LoRA rank to 16. Do not switch to QLoRA — Unsloth does not recommend it for Qwen3.5. |
 | Docker can't see GPU | Enable WSL2 backend; run the `nvidia-smi` Docker test. |
 | vLLM "unknown architecture qwen3.5" | vLLM too old → bump tag to ≥ 0.17.0 / nightly. |
 | Dataset format rejected | Ensure a single `text` column; reshape rows accordingly. |
