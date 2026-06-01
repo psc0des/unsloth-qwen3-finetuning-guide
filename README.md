@@ -1,4 +1,4 @@
-# Fine-Tuning Qwen3.5-4B with Unsloth Studio → Deploy to vLLM
+# Fine-Tuning Qwen3.5-4B with Unsloth Studio → Export for vLLM
 
 > **Goal:** End-to-end guide — finetune Qwen3.5-4B with **LoRA 16-bit** using **Unsloth Studio** (no-code, local), then export for serving with vLLM.
 > **Hardware:** 16GB VRAM / 64GB RAM, native **Windows 11**.
@@ -123,8 +123,8 @@ Then open **http://localhost:8888**
 | Context Length | 1024 | Base model takes ~8GB; shorter seq keeps activations within remaining ~8GB |
 | Rank (r) | 32 | More adapter capacity now that VRAM isn't the bottleneck |
 | Alpha | 32 | Equals r → neutral scaling (effective update scale = 1.0) |
-| Dropout | 0.05 | Light regularization for 500-entry dataset; prevents memorization |
-| Target Modules | all 7 (default) | MLP layers hold factual knowledge — skip them and domain adaptation suffers |
+| Dropout | 0.05 | Light regularization for 500-entry dataset; reduces memorization risk |
+| Target Modules | all 7 (default) | MLP layers carry much of the model's capacity — skip them and domain adaptation suffers |
 | Batch Size | 2 | VRAM constraint: ~8GB left after base model leaves no room for larger batch |
 | Grad Accum | 16 | Effective batch = 2 × 16 = 32 — production target without extra VRAM |
 | Packing | ❌ Off | Packing concatenates multiple short samples into one sequence to reduce padding waste. Useful when sequences are short and variable. Here, avg ~480 tokens fits ~2 samples per 1024-length sequence → 500 examples become ~250 packed sequences → half the gradient steps. Since our sequences are already consistent in length, packing saves no padding but costs us steps — disabled. |
@@ -411,7 +411,7 @@ After exporting, use **Compare in Chat** in Unsloth Studio to test both models s
 
 | Symptom | Fix |
 |---|---|
-| `System.Xml.XmlDocument` on install | Use the raw GitHub URL (Step 2), not `unsloth.ai/install.ps1`. |
+| `System.Xml.XmlDocument` on install | If the official URL gives this error, use the raw GitHub URL from Step 2 instead. |
 | Execution policy error | `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass` then retry. |
 | `unsloth` not recognized | Reopen PowerShell (PATH refresh). |
 | OOM during training | Reduce seq len → 512, batch → 1, or lower LoRA rank to 16. Do not switch to QLoRA — Unsloth does not recommend it for Qwen3.5. |
