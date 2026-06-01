@@ -39,6 +39,10 @@ The Qwen3.5 docs VRAM table is for **bf16 LoRA** training:
 | Speed | Slower (more VRAM pressure) | Faster (less data to move) |
 | **When to use** | Production runs, final model | Quick experiments, limited VRAM, demos |
 
+*Source: [Unsloth Qwen3.5 fine-tune docs](https://unsloth.ai/docs/models/qwen3.5/fine-tune)*
+
+> **Real-world observation:** The figures above are model weights only — what Unsloth's docs quote as the baseline. In practice, a full LoRA run on Qwen3.5-4B (batch=2, seq=1024, rank=32, gradient checkpointing on) used **15.44 / 15.93 GB** on an RTX 5060 Ti. Training also loads activations, optimizer state, and gradient buffers on top of the model weights. If you have exactly 16GB, expect it to be nearly full.
+
 ---
 
 ## 2. Install Unsloth Studio (Windows PowerShell)
